@@ -7,6 +7,9 @@ import serial
 
 PORT="/dev/ttyACM0"
 
+NON_VALUE_TYPES = ["0", "1", "6", "7"]
+# TODO: Learn how to handle mask type values
+
 def query(qmx, command):
     qmx.write(command.encode("utf-8"))
     return qmx.read_until(b';').decode('utf-8').strip()
@@ -26,7 +29,10 @@ def query_item(qmx, item):
     path = item.split("|")
     path[-1] = response[2]
     descriptor = "|".join(str(e) for e in path)
-    return {"typeid":typeid, "listid":listid, "item":descriptor}
+    value = None
+    if typeid not in NON_VALUE_TYPES:
+        value = query_value(qmx, item)
+    return {"typeid":typeid, "listid":listid, "item":descriptor, "value":value}
 
 def query_value(qmx, item):
     return strip_mm_response(query(qmx, f"MM{item};"))
@@ -81,7 +87,7 @@ print(query_value(ser,"CW|CW offset"))
 print(show_setting(ser,"CW|CW offset"))
 print(query_list(ser,"3"))
 print()
-recurse(ser, "CW")
+# recurse(ser, "CW")
 print(query_item(ser,"CW|Choose filters"))
 # NOTE: Menus with numeric titles can't be accessed by title
 # NOTE: e.g, print(query_item(ser,"CW|Choose filters|50"))
@@ -91,5 +97,5 @@ print()
 print(query_item(ser,"VFO"))
 print(query_item(ser,"VFO|VFO tune rates"))
 print(query_item(ser,"VFO|VFO tune rates|0"))
-# print(recurse(ser, ""))
+# recurse(ser, "")
 ser.close()
