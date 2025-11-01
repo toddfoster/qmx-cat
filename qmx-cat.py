@@ -45,7 +45,7 @@ def show_setting(qmx, item):
 
 def discover(ser, root):
     result=[]
-    if len(root) > 0 and root[-1] != "|":
+    if len(root) > 1 and root[-1] != "|":
         root = root + "|"
     for i in range(100):
         response = query_item(ser, f"{root}{i}")
@@ -64,38 +64,38 @@ def recurse(ser, root):
         item=i["item"]
         typeid=i["typeid"]
         # TODO replace magic numbers
-        if typeid == "0":
+        if typeid in NON_VALUE_TYPES:
             print(f"({item})")
-            submenus.append(item)
-        elif typeid == "1":
-            print(f"(!{item})")
         else:
-            print(f"{item}={query_value(ser,item)}")
+            print(f"{item}={i["value"]}")
+        if typeid == "0":
+            submenus.append(item)
     for s in submenus:
         recurse(ser, s)
 
 
 
 ser = serial.Serial(PORT)  # open serial port
-print(discover(ser, ""))
-print()
-print(discover(ser, "CW"))
-print(query_item(ser,"CW"))
-print(query_value(ser,"CW")) # blank result; no value
-print(query_item(ser,"CW|CW offset"))
-print(query_value(ser,"CW|CW offset"))
-print(show_setting(ser,"CW|CW offset"))
-print(query_list(ser,"3"))
-print()
+# print(discover(ser, ""))
+# print()
+# print(discover(ser, "CW"))
+# print(query_item(ser,"CW"))
+# print(query_value(ser,"CW")) # blank result; no value
+# print(query_item(ser,"CW|CW offset"))
+# print(query_value(ser,"CW|CW offset"))
+# print(show_setting(ser,"CW|CW offset"))
+# print(query_list(ser,"3"))
+# print()
 # recurse(ser, "CW")
-print(query_item(ser,"CW|Choose filters"))
-# NOTE: Menus with numeric titles can't be accessed by title
-# NOTE: e.g, print(query_item(ser,"CW|Choose filters|50"))
-print(query_item(ser,"CW|Choose filters|0"))
-print(show_setting(ser,"CW|Choose filters|0"))
-print()
-print(query_item(ser,"VFO"))
-print(query_item(ser,"VFO|VFO tune rates"))
-print(query_item(ser,"VFO|VFO tune rates|0"))
-# recurse(ser, "")
+# print(query_item(ser,"CW|Choose filters"))
+# # NOTE: Menus with numeric titles can't be accessed by title
+# # NOTE: e.g, print(query_item(ser,"CW|Choose filters|50"))
+# print(query_item(ser,"CW|Choose filters|0"))
+# print(show_setting(ser,"CW|Choose filters|0"))
+# print()
+# print(query_item(ser,"VFO"))
+# print(query_item(ser,"VFO|VFO tune rates"))
+# print(query_item(ser,"VFO|VFO tune rates|0"))
+# print()
+recurse(ser, "")
 ser.close()
