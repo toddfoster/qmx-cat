@@ -1,11 +1,45 @@
+#!/usr/bin/python
+
 import serial
+import argparse
 
 # qmx-cat by W2TEF begun 1 Nov 2025
 
-# TODO: Provide a decent CLI, including specifying port
+parser = argparse.ArgumentParser(
+formatter_class=argparse.RawDescriptionHelpFormatter,
+description="""
+Send CAT commands to a serial port and receive responses. 
+Includes special utilities for the QRP-Labs QMX radios.
+
+Available commands include:
+
+    dump:    Walk the menus and output (nearly) all the settings
+            (bypassing "Band config." and "Advanced config!" menus)
+""",
+epilog="""
+USE AT YOUR OWN RISK! Changing settings unthoughtfully can damage your radio.
+
+This software has no connection to QRP-Labs or its principals, except that I am a grateful user of their products.
+
+Copyright © 2025  Todd Foster, W2TEF
+License: MIT/X11 License <https://opensource.org/license/MIT>
+This  is free software: you are free to change and redistribute it.  
+There is NO WARRANTY, to the extent permitted by law.
+""")
+
+parser.add_argument("command", help="the command to run")
+parser.add_argument("-p", "--port", 
+                    default="/dev/ttyACM0",
+                    help="the port connected to the QMX (default=/dev/ttyACM0)") 
+args = parser.parse_args()
+commands = parser.add_subparsers(dest='command')
+
+command_cat = commands.add_parser('cat', help='send a cat command')
+command_cat.add_argument('cat_command')
+
+command_dump = commands.add_parser('dump', help='display (nearly) all settings')
 
 
-PORT="/dev/ttyACM0"
 
 # NOTE: Band config is a table; not handled here
 # NOTE: Advanced config! I don't want to entrust to an automated tool
@@ -99,7 +133,7 @@ def recurse(qmx, path):
     recurse_menu(qmx, {"path":path, "descriptor":descriptor})
 
 
-qmx = serial.Serial(PORT)  # open serial port
+qmx = serial.Serial(args.port)  # open serial port
 # print(discover(qmx, ""))
 # print()
 # print(discover(qmx, "CW"))
@@ -117,7 +151,7 @@ qmx = serial.Serial(PORT)  # open serial port
 # print(menu_report(qmx,"CW|Choose filters|0"))
 # print()
 # print(menu_query(qmx,"VFO"))
-# print(menu_query(qmx,"VFO|VFO tune rates"))
+#print(menu_query(qmx,"VFO|VFO tune rates"))
 # print(menu_query(qmx,"VFO|VFO tune rates|0"))
 # print(menu_path_to_alpha(qmx, "0"))
 # print(menu_path_to_alpha(qmx, "1|0"))
@@ -127,5 +161,12 @@ qmx = serial.Serial(PORT)  # open serial port
 # print()
 # recurse(qmx, "")
 # print(discover(qmx, "11"))
-recurse(qmx, "")
+# recurse(qmx, "")
+
+if args.command == "dump":
+    recurse(qmx, "")
+elif args.command == "cat":
+    print(cat(qmx, args.cat_command))
+
+
 qmx.close()
