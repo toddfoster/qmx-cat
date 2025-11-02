@@ -6,38 +6,55 @@ import argparse
 # qmx-cat by W2TEF begun 1 Nov 2025
 
 parser = argparse.ArgumentParser(
-formatter_class=argparse.RawDescriptionHelpFormatter,
-description="""
+formatter_class = argparse.RawDescriptionHelpFormatter,
+description = """
 Send CAT commands to a serial port and receive responses. 
 Includes special utilities for the QRP-Labs QMX radios.
-
-Available commands include:
-
-    dump:    Walk the menus and output (nearly) all the settings
-            (bypassing "Band config." and "Advanced config!" menus)
 """,
-epilog="""
+epilog = """
+Notes: 
+- The "dump" command will bypass the "Band config." and "Advanced config!" menus.
+ 
 USE AT YOUR OWN RISK! Changing settings unthoughtfully can damage your radio.
-
-This software has no connection to QRP-Labs or its principals, except that I am a grateful user of their products.
-
-Copyright © 2025  Todd Foster, W2TEF
-License: MIT/X11 License <https://opensource.org/license/MIT>
+ 
+This software has no connection to QRP-Labs or its principals, except that I am a grateful user of their products. 
+Refer to the "CAT Programming Manual" to understand what's going on here.
+ 
+Copyright © 2025  Todd Foster, W2TEF  
+License: MIT/X11 License <https://opensource.org/license/MIT>  
 This  is free software: you are free to change and redistribute it.  
 There is NO WARRANTY, to the extent permitted by law.
 """)
 
-parser.add_argument("command", help="the command to run")
 parser.add_argument("-p", "--port", 
                     default="/dev/ttyACM0",
                     help="the port connected to the QMX (default=/dev/ttyACM0)") 
+command_parser = parser.add_subparsers(dest='command')
+
+dump_p = command_parser.add_parser('dump', help='[PATH]: display (nearly) all settings')
+dump_p.add_argument('path', default="", nargs='?')
+
+cat_p = command_parser.add_parser('cat', help='CMD [-n --no_wait for response]: send a cat command (semi-colon optional)')
+cat_p.add_argument('cat_command')
+cat_p.add_argument('-n', "--no_wait",
+                   action='store_true',
+                   help="don't wait for a response")
+
+mm_p = command_parser.add_parser('mm', help='PATH: get a menu value')
+mm_p.add_argument('path')
+
+mmq_p = command_parser.add_parser('mm?', help='PATH: query a menu entry')
+mmq_p.add_argument('path')
+
+ml_p = command_parser.add_parser('ml', help='PATH: show a menu list')
+ml_p.add_argument('list_number')
+
+discover_p = command_parser.add_parser('discover', 
+                                       help='[PATH]: discover a menu')
+discover_p.add_argument('path', default="", nargs='?')
+
+
 args = parser.parse_args()
-commands = parser.add_subparsers(dest='command')
-
-command_cat = commands.add_parser('cat', help='send a cat command')
-command_cat.add_argument('cat_command')
-
-command_dump = commands.add_parser('dump', help='display (nearly) all settings')
 
 
 
@@ -49,6 +66,9 @@ NON_VALUE_TYPES = ["0", "1", "6"]
 
 def cat(qmx, command):
     qmx.write(command.encode("utf-8"))
+
+def cat_with_response(qmx, command):
+    cat(qmx, command)
     return qmx.read_until(b';').decode('utf-8').strip()
 
 def strip_menu_response(t):
@@ -56,13 +76,13 @@ def strip_menu_response(t):
     return t[2:-1]
 
 def menu_get(qmx, path):
-    return strip_menu_response(cat(qmx, f"MM{path};"))
+    return strip_menu_response(cat_with_response(qmx, f"MM{path};"))
 
 def menu_list(qmx, listRef):
-    return strip_menu_response(cat(qmx, f"ML{listRef};"))
+    return strip_menu_response(cat_with_response(qmx, f"ML{listRef};"))
 
 def menu_query(qmx, path):
-    response = cat(qmx, f"MM{path}?;")
+    response = cat_with_response(qmx, f"MM{path}?;")
     if response == "?;":
         return None
     response = strip_menu_response(response)
@@ -164,9 +184,25 @@ qmx = serial.Serial(args.port)  # open serial port
 # recurse(qmx, "")
 
 if args.command == "dump":
-    recurse(qmx, "")
+    recurse(qmx, args.path)
 elif args.command == "cat":
-    print(cat(qmx, args.cat_command))
+    command = args.cat_command
+    # Sugar: my shell interprets the semicolon instead of passing it
+    if command[-1] != ';':
+        command = command + ";"
+    if args.no_wait:
+        cat(qmx, command)
+    else:
+        print(cat_with_response(qmx, command))
+elif args.command == "mm":
+    print(menu_get(qmx,args.path))
+elif args.command == "mm?":
+    print(menu_query(qmx,args.path))
+elif args.command == "ml":
+    print(menu_list(qmx,args.list_number))
+elif args.command == "discover":
+    # TODO: Tidy up output into columns?
+    print(discover(qmx,args.path))
 
 
 qmx.close()
