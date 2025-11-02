@@ -3,15 +3,15 @@ import serial
 # qmx-cat by W2TEF begun 1 Nov 2025
 
 # TODO: Provide a decent CLI, including specifying port
-# DEBUG: Not reading all band settings
-# TODO: report out name of path without numbers
 
 
 PORT="/dev/ttyACM0"
 
-NON_VALUE_TYPES = ["0", "1", "6"]
+# NOTE: Band config is a table; not handled here
+# NOTE: Advanced config! I don't want to entrust to an automated tool
+MENUS_TO_AVOID = ["Band config.[16]", "System config|Advanced config!"] 
 
-discovery_cache = {}
+NON_VALUE_TYPES = ["0", "1", "6"]
 
 def cat(qmx, command):
     qmx.write(command.encode("utf-8"))
@@ -43,8 +43,16 @@ def menu_query(qmx, path):
             "listid":listid, "descriptor":descriptor, 
             "value":value}
 
+def menu_path_to_alpha(qmx, path):
+    result = []
+    path_steps = path.split("|")
+    for i in range(len(path_steps)):
+        this_path = "|".join(path_steps[0:i+1])
+        result.append(menu_query(qmx, this_path)["descriptor"])
+    return "|".join(result)
+
 def menu_report(qmx, path):
-    return f"{path}={menu_get(qmx,path)}"
+    return f"{menu_path_to_alpha(qmx,path)}={menu_get(qmx,path)}"
 
 def discover(ser, root):
     result=[]
@@ -73,11 +81,13 @@ def recurse_menu(ser, menu):
         if typeid in NON_VALUE_TYPES:
             print(f"# ({descriptor})")
         else:
-            print(f"{descriptor}={i["value"]}")
+            print(menu_report(ser, i["path"]))
+            # print(f"{descriptor}={i["value"]}")
         if typeid == "0":
             submenus.append(i)
     for s in submenus:
-        recurse_menu(ser, s)
+        if menu_path_to_alpha(qmx, s["path"]) not in MENUS_TO_AVOID:
+            recurse_menu(ser, s)
 
 
 def recurse(qmx, path):
@@ -87,28 +97,33 @@ def recurse(qmx, path):
     recurse_menu(qmx, {"path":path, "descriptor":descriptor})
 
 
-ser = serial.Serial(PORT)  # open serial port
-# print(discover(ser, ""))
+qmx = serial.Serial(PORT)  # open serial port
+# print(discover(qmx, ""))
 # print()
-# print(discover(ser, "CW"))
-# print(menu_query(ser,"CW"))
-# print(menu_get(ser,"CW")) # blank result; no value
-# print(menu_query(ser,"CW|CW offset"))
-# print(menu_get(ser,"CW|CW offset"))
-# print(menu_report(ser,"CW|CW offset"))
-# print(menu_list(ser,"3"))
+# print(discover(qmx, "CW"))
+# print(menu_query(qmx,"CW"))
+# print(menu_get(qmx,"CW")) # blank result; no value
+# print(menu_query(qmx,"CW|CW offset"))
+# print(menu_get(qmx,"CW|CW offset"))
+# print(menu_report(qmx,"CW|CW offset"))
+# print(menu_list(qmx,"3"))
 # print()
-# print(menu_query(ser,"CW|Choose filters"))
+# print(menu_query(qmx,"CW|Choose filters"))
 # # NOTE: Menus with numeric titles can't be accessed by title
-# # NOTE: e.g, print(menu_query(ser,"CW|Choose filters|50"))
-# print(menu_query(ser,"CW|Choose filters|0"))
-# print(menu_report(ser,"CW|Choose filters|0"))
+# # NOTE: e.g, print(menu_query(qmx,"CW|Choose filters|50"))
+# print(menu_query(qmx,"CW|Choose filters|0"))
+# print(menu_report(qmx,"CW|Choose filters|0"))
 # print()
-# print(menu_query(ser,"VFO"))
-# print(menu_query(ser,"VFO|VFO tune rates"))
-# print(menu_query(ser,"VFO|VFO tune rates|0"))
+# print(menu_query(qmx,"VFO"))
+# print(menu_query(qmx,"VFO|VFO tune rates"))
+# print(menu_query(qmx,"VFO|VFO tune rates|0"))
+# print(menu_path_to_alpha(qmx, "0"))
+# print(menu_path_to_alpha(qmx, "1|0"))
+# print(menu_path_to_alpha(qmx, "1|0|1"))
 # print()
-# recurse(ser, "CW")
+# recurse(qmx, "CW")
 # print()
-recurse(ser, "")
-ser.close()
+# recurse(qmx, "")
+# print(discover(qmx, "11"))
+recurse(qmx, "")
+qmx.close()
