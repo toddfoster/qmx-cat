@@ -3,12 +3,15 @@ import serial
 # qmx-cat by W2TEF begun 1 Nov 2025
 
 # TODO: Provide a decent CLI, including specifying port
+# DEBUG: Not reading all band settings
+# TODO: report out name of path without numbers
 
 
 PORT="/dev/ttyACM0"
 
-NON_VALUE_TYPES = ["0", "1", "6", "7"]
-# TODO: Learn how to handle mask type values
+NON_VALUE_TYPES = ["0", "1", "6"]
+
+discovery_cache = {}
 
 def cat(qmx, command):
     qmx.write(command.encode("utf-8"))
@@ -24,7 +27,6 @@ def menu_get(qmx, path):
 def menu_list(qmx, listRef):
     return strip_menu_response(cat(qmx, f"ML{listRef};"))
 
-
 def menu_query(qmx, path):
     response = cat(qmx, f"MM{path}?;")
     if response == "?;":
@@ -33,20 +35,20 @@ def menu_query(qmx, path):
     response = response.split("|")
     typeid=response[0]
     listid=response[1]
-    path = path.split("|")
-    path[-1] = response[2]
-    descriptor = "|".join(str(e) for e in path)
+    descriptor = response[2]
     value = None
     if typeid not in NON_VALUE_TYPES:
         value = menu_get(qmx, path)
-    return {"typeid":typeid, "listid":listid, "path":descriptor, "value":value}
+    return {"path":path, "typeid":typeid, 
+            "listid":listid, "descriptor":descriptor, 
+            "value":value}
 
 def menu_report(qmx, path):
     return f"{path}={menu_get(qmx,path)}"
 
 def discover(ser, root):
     result=[]
-    if len(root) > 1 and root[-1] != "|":
+    if len(root) > 0 and root[-1] != "|":
         root = root + "|"
     for i in range(100):
         response = menu_query(ser, f"{root}{i}")
@@ -55,25 +57,34 @@ def discover(ser, root):
         result.append(response)
     return result
 
-def recurse(ser, root):
-    if root != "":
-        print(f"##############")
-        print(f"# MENU: {root}")
-    submenus = []
-    paths = discover(ser, root)
-    for i in paths:
-        path=i["path"]
-        typeid=i["typeid"]
-        # TODO replace magic numbers
-        if typeid in NON_VALUE_TYPES:
-            print(f"# ({path})")
-        else:
-            print(f"{path}={i["value"]}")
-        if typeid == "0":
-            submenus.append(path)
-    for s in submenus:
-        recurse(ser, s)
 
+def recurse_menu(ser, menu):
+    # Recurse using numeric indices to avoid tripping over
+    # me_nu entries who being with numerals
+    print(f"##############")
+    if menu == "":
+        print(f"# MENU (root)")
+    else:
+        print(f"# MENU {menu['path']} : {menu['descriptor']}")
+    submenus = []
+    for i in discover(ser, menu["path"]):
+        descriptor=i["descriptor"]
+        typeid=i["typeid"]
+        if typeid in NON_VALUE_TYPES:
+            print(f"# ({descriptor})")
+        else:
+            print(f"{descriptor}={i["value"]}")
+        if typeid == "0":
+            submenus.append(i)
+    for s in submenus:
+        recurse_menu(ser, s)
+
+
+def recurse(qmx, path):
+    descriptor = ""
+    if path != "":
+        descriptor = menu_query(qmx, path)["descriptor"]
+    recurse_menu(qmx, {"path":path, "descriptor":descriptor})
 
 
 ser = serial.Serial(PORT)  # open serial port
@@ -87,7 +98,6 @@ ser = serial.Serial(PORT)  # open serial port
 # print(menu_report(ser,"CW|CW offset"))
 # print(menu_list(ser,"3"))
 # print()
-# recurse(ser, "CW")
 # print(menu_query(ser,"CW|Choose filters"))
 # # NOTE: Menus with numeric titles can't be accessed by title
 # # NOTE: e.g, print(menu_query(ser,"CW|Choose filters|50"))
@@ -97,6 +107,8 @@ ser = serial.Serial(PORT)  # open serial port
 # print(menu_query(ser,"VFO"))
 # print(menu_query(ser,"VFO|VFO tune rates"))
 # print(menu_query(ser,"VFO|VFO tune rates|0"))
+# print()
+# recurse(ser, "CW")
 # print()
 recurse(ser, "")
 ser.close()
