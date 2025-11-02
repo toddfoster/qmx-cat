@@ -39,8 +39,10 @@ def menu_query(qmx, path):
     value = None
     if typeid not in NON_VALUE_TYPES:
         value = menu_get(qmx, path)
-    return {"path":path, "typeid":typeid, 
-            "listid":listid, "descriptor":descriptor, 
+    return {"path":path, 
+            "typeid":typeid, 
+            "listid":listid, 
+            "descriptor":descriptor, 
             "value":value}
 
 def menu_path_to_alpha(qmx, path):
@@ -54,19 +56,19 @@ def menu_path_to_alpha(qmx, path):
 def menu_report(qmx, path):
     return f"{menu_path_to_alpha(qmx,path)}={menu_get(qmx,path)}"
 
-def discover(ser, root):
+def discover(qmx, root):
     result=[]
     if len(root) > 0 and root[-1] != "|":
         root = root + "|"
     for i in range(100):
-        response = menu_query(ser, f"{root}{i}")
+        response = menu_query(qmx, f"{root}{i}")
         if response == None:
             break
         result.append(response)
     return result
 
 
-def recurse_menu(ser, menu):
+def recurse_menu(qmx, menu):
     # Recurse using numeric indices to avoid tripping over
     # me_nu entries who being with numerals
     print(f"##############")
@@ -75,19 +77,19 @@ def recurse_menu(ser, menu):
     else:
         print(f"# MENU {menu['path']} : {menu['descriptor']}")
     submenus = []
-    for i in discover(ser, menu["path"]):
+    for i in discover(qmx, menu["path"]):
         descriptor=i["descriptor"]
         typeid=i["typeid"]
         if typeid in NON_VALUE_TYPES:
             print(f"# ({descriptor})")
         else:
-            print(menu_report(ser, i["path"]))
+            print(menu_report(qmx, i["path"]))
             # print(f"{descriptor}={i["value"]}")
         if typeid == "0":
             submenus.append(i)
     for s in submenus:
         if menu_path_to_alpha(qmx, s["path"]) not in MENUS_TO_AVOID:
-            recurse_menu(ser, s)
+            recurse_menu(qmx, s)
 
 
 def recurse(qmx, path):
