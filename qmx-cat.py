@@ -5,6 +5,10 @@ import argparse
 
 # qmx-cat by W2TEF begun 1 Nov 2025
 
+# TODO: ¿Tidy up output of discover, mm?
+# TODO: Implement menu setter
+# TODO: Implement batch setter
+
 parser = argparse.ArgumentParser(
 formatter_class = argparse.RawDescriptionHelpFormatter,
 description = """
@@ -42,6 +46,9 @@ cat_p.add_argument('-n', "--no_wait",
 
 mm_p = command_parser.add_parser('mm', help='PATH: get a menu value')
 mm_p.add_argument('path')
+
+report_p = command_parser.add_parser('report', help='PATH: report a path and value')
+report_p.add_argument('path')
 
 mmq_p = command_parser.add_parser('mm?', help='PATH: query a menu entry')
 mmq_p.add_argument('path')
@@ -154,34 +161,6 @@ def recurse(qmx, path):
 
 
 qmx = serial.Serial(args.port)  # open serial port
-# print(discover(qmx, ""))
-# print()
-# print(discover(qmx, "CW"))
-# print(menu_query(qmx,"CW"))
-# print(menu_get(qmx,"CW")) # blank result; no value
-# print(menu_query(qmx,"CW|CW offset"))
-# print(menu_get(qmx,"CW|CW offset"))
-# print(menu_report(qmx,"CW|CW offset"))
-# print(menu_list(qmx,"3"))
-# print()
-# print(menu_query(qmx,"CW|Choose filters"))
-# # NOTE: Menus with numeric titles can't be accessed by title
-# # NOTE: e.g, print(menu_query(qmx,"CW|Choose filters|50"))
-# print(menu_query(qmx,"CW|Choose filters|0"))
-# print(menu_report(qmx,"CW|Choose filters|0"))
-# print()
-# print(menu_query(qmx,"VFO"))
-#print(menu_query(qmx,"VFO|VFO tune rates"))
-# print(menu_query(qmx,"VFO|VFO tune rates|0"))
-# print(menu_path_to_alpha(qmx, "0"))
-# print(menu_path_to_alpha(qmx, "1|0"))
-# print(menu_path_to_alpha(qmx, "1|0|1"))
-# print()
-# recurse(qmx, "CW")
-# print()
-# recurse(qmx, "")
-# print(discover(qmx, "11"))
-# recurse(qmx, "")
 
 if args.command == "dump":
     recurse(qmx, args.path)
@@ -196,13 +175,14 @@ elif args.command == "cat":
         print(cat_with_response(qmx, command))
 elif args.command == "mm":
     print(menu_get(qmx,args.path))
+elif args.command == "report":
+    print(menu_report(qmx,args.path))
 elif args.command == "mm?":
     print(menu_query(qmx,args.path))
 elif args.command == "ml":
     print(menu_list(qmx,args.list_number))
 elif args.command == "discover":
-    # TODO: Tidy up output into columns?
-    print(discover(qmx,args.path))
-
+    for i in discover(qmx,args.path):
+        print(i)
 
 qmx.close()
