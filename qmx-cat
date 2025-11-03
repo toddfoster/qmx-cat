@@ -50,7 +50,7 @@ mmset_p = command_parser.add_parser('mm_set', help='PATH VALUE: set a menu value
 mmset_p.add_argument('path')
 mmset_p.add_argument('value')
 
-mmsetmany_p = command_parser.add_parser('mm_set_many', help="STDIN or file pipe: set multiple menu values (input format same as report format)")
+mmsetmany_p = command_parser.add_parser('mm_set_many', help="FILE or - for STDIN: set multiple menu values (input format same as report format)")
 mmsetmany_p.add_argument('infile', type=argparse.FileType('r'), default='-')
 
 report_p = command_parser.add_parser('report', help='PATH: report a path and value')

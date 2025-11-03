@@ -6,20 +6,44 @@ This is a crude tool with almost no guard-rails. Use with caution, and at your o
 ## Getting Started: 
 
 qmx-cat -h: Get help
+```
+usage: qmx-cat [-h] [-p PORT] {dump,cat,mm,mm_set,mm_set_many,report,mm?,ml,discover} ...
+
+Send CAT commands to a serial port and receive responses.
+Includes special utilities for the QRP-Labs QMX radios.
+
+positional arguments:
+  {dump,cat,mm,mm_set,mm_set_many,report,mm?,ml,discover}
+    dump                [PATH]: display (nearly) all settings
+    cat                 CMD [-n --no_wait for response]: send a cat command (semi-colon optional)
+    mm                  PATH: get a menu value
+    mm_set              PATH VALUE: set a menu value
+    mm_set_many         FILE or - for STDIN: set multiple menu values (input format same as report format)
+    report              PATH: report a path and value
+    mm?                 PATH: query a menu entry
+    ml                  PATH: show a menu list
+    discover            [PATH]: discover a menu
+
+options:
+  -h, --help            show this help message and exit
+  -p, --port PORT       the port connected to the QMX (default=/dev/ttyACM0)
+
+Notes:
+- The "dump" command will bypass the "Band config." and "Advanced config!" menus.
+
+USE AT YOUR OWN RISK! Changing settings unthoughtfully can damage your radio.
+
+This software has no connection to QRP-Labs or its principals, except that I am a grateful user of their products.
+Refer to the "CAT Programming Manual" to understand what's going on here.
+
+Copyright © 2025  Todd Foster, W2TEF
+License: MIT/X11 License <https://opensource.org/license/MIT>
+This  is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+```
+
 qmx-cat /command/ -h: Get help with a specific command
 
-Specify port with -p PORT (defaults to /dev/ttyACM0)
-
-## Commands:
-dump: display (nearly) all settings
-cat: send a raw cat command
-mm: Get a menu value
-mm_set: set a menu value
-mm_set_many: set multiple menu values, using a file as input
-report: report one or many menu values
-mm?: query a menu entry
-ml?: show a list of options for a defined menu list
-discover: discover a menu
 
 
 ## Examples:
