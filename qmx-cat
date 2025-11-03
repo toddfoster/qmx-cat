@@ -43,15 +43,15 @@ cat_p.add_argument('-n', "--no_wait",
                    action='store_true',
                    help="don't wait for a response")
 
-mm_p = command_parser.add_parser('mm', help='PATH: get a menu value')
-mm_p.add_argument('path')
+get_p = command_parser.add_parser('get', help='PATH: get a menu value')
+get_p.add_argument('path')
 
-mmset_p = command_parser.add_parser('mm_set', help='PATH VALUE: set a menu value')
-mmset_p.add_argument('path')
-mmset_p.add_argument('value')
+set_p = command_parser.add_parser('set', help='PATH VALUE: set a menu value')
+set_p.add_argument('path')
+set_p.add_argument('value')
 
-mmsetmany_p = command_parser.add_parser('mm_set_many', help="FILE or - for STDIN: set multiple menu values (input format same as report format)")
-mmsetmany_p.add_argument('infile', type=argparse.FileType('r'), default='-')
+load_p = command_parser.add_parser('load', help="FILE or - for STDIN: set multiple menu values (input format same as report format)")
+load_p.add_argument('infile', type=argparse.FileType('r'), default='-')
 
 report_p = command_parser.add_parser('report', help='PATH: report a path and value')
 report_p.add_argument('path')
@@ -183,9 +183,9 @@ elif args.command == "cat":
         cat(qmx, command)
     else:
         print(cat_with_response(qmx, command))
-elif args.command == "mm":
+elif args.command == "get":
     print(menu_get(qmx, args.path))
-elif args.command == "mm_set":
+elif args.command == "set":
     menu_set(qmx, args.path, args.value)
 elif args.command == "report":
     if(menu_query(qmx, args.path)["typeid"]==f"{SUBDIRECTORY_TYPE}"):
@@ -200,7 +200,7 @@ elif args.command == "ml":
 elif args.command == "discover":
     for i in discover(qmx, args.path):
         print(i)
-elif args.command == "mm_set_many":
+elif args.command == "load":
     with args.infile as file:
         for line in file:
             if line[0] == "#":
