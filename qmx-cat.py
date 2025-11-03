@@ -6,7 +6,6 @@ import argparse
 # qmx-cat by W2TEF begun 1 Nov 2025
 
 # TODO: ¿Tidy up output of discover, mm?
-# TODO: Implement batch setter
 # TODO: Note that setting a string to an empty string doesn't change it
 
 parser = argparse.ArgumentParser(
@@ -50,6 +49,9 @@ mm_p.add_argument('path')
 mmset_p = command_parser.add_parser('mm_set', help='PATH VALUE: set a menu value')
 mmset_p.add_argument('path')
 mmset_p.add_argument('value')
+
+mmsetmany_p = command_parser.add_parser('mm_set_many', help="STDIN or file pipe: set multiple menu values (input format same as report format)")
+mmsetmany_p.add_argument('infile', type=argparse.FileType('r'), default='-')
 
 report_p = command_parser.add_parser('report', help='PATH: report a path and value')
 report_p.add_argument('path')
@@ -198,5 +200,14 @@ elif args.command == "ml":
 elif args.command == "discover":
     for i in discover(qmx, args.path):
         print(i)
+elif args.command == "mm_set_many":
+    with args.infile as file:
+        for line in file:
+            if line[0] == "#":
+                continue
+            pieces = line.strip().split("=", 1)
+            if (pieces[1]=="" and pieces[0].startswith("Messages|Message")):
+                pieces[1]=" " # TODO: This seems like an ugly hack
+            menu_set(qmx, pieces[0], pieces[1])
 
 qmx.close()
