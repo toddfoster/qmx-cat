@@ -6,8 +6,8 @@ import argparse
 # qmx-cat by W2TEF begun 1 Nov 2025
 
 # TODO: ¿Tidy up output of discover, mm?
-# TODO: Implement menu setter
 # TODO: Implement batch setter
+# TODO: Note that setting a string to an empty string doesn't change it
 
 parser = argparse.ArgumentParser(
 formatter_class = argparse.RawDescriptionHelpFormatter,
@@ -47,6 +47,10 @@ cat_p.add_argument('-n', "--no_wait",
 mm_p = command_parser.add_parser('mm', help='PATH: get a menu value')
 mm_p.add_argument('path')
 
+mmset_p = command_parser.add_parser('mm_set', help='PATH VALUE: set a menu value')
+mmset_p.add_argument('path')
+mmset_p.add_argument('value')
+
 report_p = command_parser.add_parser('report', help='PATH: report a path and value')
 report_p.add_argument('path')
 
@@ -84,6 +88,9 @@ def strip_menu_response(t):
 
 def menu_get(qmx, path):
     return strip_menu_response(cat_with_response(qmx, f"MM{path};"))
+
+def menu_set(qmx, path, value):
+    return cat(qmx, f"MM{path}={value};")
 
 def menu_list(qmx, listRef):
     return strip_menu_response(cat_with_response(qmx, f"ML{listRef};"))
@@ -174,15 +181,17 @@ elif args.command == "cat":
     else:
         print(cat_with_response(qmx, command))
 elif args.command == "mm":
-    print(menu_get(qmx,args.path))
+    print(menu_get(qmx, args.path))
+elif args.command == "mm_set":
+    menu_set(qmx, args.path, args.value)
 elif args.command == "report":
-    print(menu_report(qmx,args.path))
+    print(menu_report(qmx, args.path))
 elif args.command == "mm?":
-    print(menu_query(qmx,args.path))
+    print(menu_query(qmx, args.path))
 elif args.command == "ml":
-    print(menu_list(qmx,args.list_number))
+    print(menu_list(qmx, args.list_number))
 elif args.command == "discover":
-    for i in discover(qmx,args.path):
+    for i in discover(qmx, args.path):
         print(i)
 
 qmx.close()
