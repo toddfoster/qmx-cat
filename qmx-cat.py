@@ -74,6 +74,7 @@ args = parser.parse_args()
 MENUS_TO_AVOID = ["Band config.[16]", "System config|Advanced config!"] 
 
 NON_VALUE_TYPES = ["0", "1", "6"]
+SUBDIRECTORY_TYPE = 0
 
 def cat(qmx, command):
     qmx.write(command.encode("utf-8"))
@@ -185,7 +186,11 @@ elif args.command == "mm":
 elif args.command == "mm_set":
     menu_set(qmx, args.path, args.value)
 elif args.command == "report":
-    print(menu_report(qmx, args.path))
+    if(menu_query(qmx, args.path)["typeid"]==f"{SUBDIRECTORY_TYPE}"):
+        for i in discover(qmx, args.path):
+            print(menu_report(qmx, i["path"]))
+    else:
+        print(menu_report(qmx, args.path))
 elif args.command == "mm?":
     print(menu_query(qmx, args.path))
 elif args.command == "ml":
