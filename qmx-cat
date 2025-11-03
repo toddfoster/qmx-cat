@@ -7,6 +7,8 @@ import argparse
 
 # TODO: ¿Tidy up output of discover, mm?
 # TODO: Note that setting a string to an empty string doesn't change it
+# TODO: Check input validity for set?
+# TODO: distinguish or combine dump/report
 
 parser = argparse.ArgumentParser(
 formatter_class = argparse.RawDescriptionHelpFormatter,
@@ -53,6 +55,9 @@ set_p.add_argument('value')
 load_p = command_parser.add_parser('load', help="FILE or - for STDIN: set multiple menu values (input format same as report format)")
 load_p.add_argument('infile', type=argparse.FileType('r'), default='-')
 
+type_p= command_parser.add_parser('type', help='PATH: get the type of a menu item')
+type_p.add_argument('path')
+
 report_p = command_parser.add_parser('report', help='PATH: report a path and value')
 report_p.add_argument('path')
 
@@ -78,6 +83,9 @@ MENUS_TO_AVOID = ["Band config.[16]", "System config|Advanced config!"]
 NON_VALUE_TYPES = ["0", "1", "6"]
 SUBDIRECTORY_TYPE = 0
 
+DATA_TYPES = { "0":"Sub-menu", "1":"Action", "2":"String", "3":"Number",
+               "4":"Byte", "5":"Defined", "6":"Info", "7":"Mask" }
+
 def cat(qmx, command):
     qmx.write(command.encode("utf-8"))
 
@@ -94,6 +102,13 @@ def menu_get(qmx, path):
 
 def menu_set(qmx, path, value):
     return cat(qmx, f"MM{path}={value};")
+
+def menu_type(qmx, path):
+    item = menu_query(qmx, path)
+    type = DATA_TYPES[item["typeid"]]
+    if type == "Defined":
+        type = type + ": " + menu_list(qmx, item["listid"])
+    return type
 
 def menu_list(qmx, listRef):
     return strip_menu_response(cat_with_response(qmx, f"ML{listRef};"))
@@ -187,6 +202,8 @@ elif args.command == "get":
     print(menu_get(qmx, args.path))
 elif args.command == "set":
     menu_set(qmx, args.path, args.value)
+elif args.command == "type":
+    print(menu_type(qmx, args.path))
 elif args.command == "report":
     if(menu_query(qmx, args.path)["typeid"]==f"{SUBDIRECTORY_TYPE}"):
         for i in discover(qmx, args.path):
