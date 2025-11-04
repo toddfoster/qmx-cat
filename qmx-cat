@@ -17,7 +17,7 @@ Includes special utilities for the QRP-Labs QMX radios.
 """,
 epilog = """
 Notes: 
-- The "dump" command will bypass the "Band config." and "Advanced config!" menus.
+- The "show" command will bypass the "Band config." and "Advanced config!" menus.
  
 USE AT YOUR OWN RISK! Changing settings unthoughtfully can damage your radio.
  
@@ -42,13 +42,13 @@ set_p = command_parser.add_parser('set', help='PATH VALUE: set a menu value')
 set_p.add_argument('path')
 set_p.add_argument('value')
 
-show_p = command_parser.add_parser('show', help='[PATH]: display (nearly) all settings')
+show_p = command_parser.add_parser('show', help='[PATH] [--recursive]: display (nearly) all settings')
 show_p.add_argument('path', default="", nargs='?')
 show_p.add_argument('-r', "--recursive",
                    action='store_true',
                    help="recurse through any submenus")
 
-load_p = command_parser.add_parser('load', help="FILE or - for STDIN: set multiple menu values (input format same as report format)")
+load_p = command_parser.add_parser('load', help="FILE or - for STDIN: set multiple menu values (input format same as 'show' format)")
 load_p.add_argument('infile', type=argparse.FileType('r'), default='-')
 
 type_p= command_parser.add_parser('type', help='PATH: get the type of a menu item')
