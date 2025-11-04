@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
-import serial
 import argparse
+import serial
 
 # qmx-cat by W2TEF begun 1 Nov 2025
 
@@ -12,27 +12,27 @@ import argparse
 parser = argparse.ArgumentParser(
 formatter_class = argparse.RawDescriptionHelpFormatter,
 description = """
-Send CAT commands to a serial port and receive responses. 
+Send CAT commands to a serial port and receive responses.
 Includes special utilities for the QRP-Labs QMX radios.
 """,
 epilog = """
-Notes: 
+Notes:
 - The "show" command will bypass the "Band config." and "Advanced config!" menus.
- 
+
 USE AT YOUR OWN RISK! Changing settings unthoughtfully can damage your radio.
- 
-This software has no connection to QRP-Labs or its principals, except that I am a grateful user of their products. 
+
+This software has no connection to QRP-Labs or its principals, except that I am a grateful user of their products.
 Refer to the "CAT Programming Manual" to understand what's going on here.
- 
-Copyright © 2025  Todd Foster, W2TEF  
-License: MIT/X11 License <https://opensource.org/license/MIT>  
-This  is free software: you are free to change and redistribute it.  
+
+Copyright © 2025  Todd Foster, W2TEF 
+License: MIT/X11 License <https://opensource.org/license/MIT> 
+This  is free software: you are free to change and redistribute it. 
 There is NO WARRANTY, to the extent permitted by law.
 """)
 
-parser.add_argument("-p", "--port", 
+parser.add_argument("-p", "--port",
                     default="/dev/ttyACM0",
-                    help="the port connected to the QMX (default=/dev/ttyACM0)") 
+                    help="the port connected to the QMX (default=/dev/ttyACM0)")
 command_parser = parser.add_subparsers(dest='command')
 
 get_p = command_parser.add_parser('get', help='PATH: get a menu value')
@@ -42,13 +42,15 @@ set_p = command_parser.add_parser('set', help='PATH VALUE: set a menu value')
 set_p.add_argument('path')
 set_p.add_argument('value')
 
-show_p = command_parser.add_parser('show', help='[PATH] [--recursive]: display (nearly) all settings')
+show_p = command_parser.add_parser('show',
+                                   help='[PATH] [--recursive]: display (nearly) all settings')
 show_p.add_argument('path', default="", nargs='?')
 show_p.add_argument('-r', "--recursive",
                    action='store_true',
                    help="recurse through any submenus")
 
-load_p = command_parser.add_parser('load', help="FILE or - for STDIN: set multiple menu values (input format same as 'show' format)")
+load_p = command_parser.add_parser('load',
+                                   help="FILE or - for STDIN: set multiple menu values (input format same as 'show' format)")
 load_p.add_argument('infile', type=argparse.FileType('r'), default='-')
 
 type_p= command_parser.add_parser('type', help='PATH: get the type of a menu item')
@@ -72,7 +74,7 @@ args = parser.parse_args()
 
 # NOTE: Band config is a table; not handled here
 # NOTE: Advanced config! I don't want to entrust to an automated tool
-MENUS_TO_AVOID = ["Band config.[16]", "System config|Advanced config!"] 
+MENUS_TO_AVOID = ["Band config.[16]", "System config|Advanced config!"]
 
 NON_VALUE_TYPES = ["0", "1", "6"]
 
@@ -85,38 +87,38 @@ ROOT_PATH = "root - unique string"
 
 SHOW_DIVIDER = "#############"
 
-def cat(qmx, command):
-    qmx.write(command.encode("utf-8"))
+def cat(q, cmd):
+    q.write(cmd.encode("utf-8"))
 
-def cat_with_response(qmx, command):
-    cat(qmx, command)
-    return qmx.read_until(b';').decode('utf-8').strip()
+def cat_with_response(q, cmd):
+    cat(q, cmd)
+    return q.read_until(b';').decode('utf-8').strip()
 
 def strip_menu_response(t):
     # TODO: Verify correct response: MM.*;
     return t[2:-1]
 
-def menu_get(qmx, path):
-    return strip_menu_response(cat_with_response(qmx, f"MM{path};"))
+def menu_get(q, path):
+    return strip_menu_response(cat_with_response(q, f"MM{path};"))
 
-def menu_set(qmx, path, value):
-    alpha_path = menu_path_to_alpha(qmx, path)
+def menu_set(q, path, value):
+    alpha_path = menu_path_to_alpha(q, path)
     if (value=="" and alpha_path.startswith("Messages|Message")):
-        value=" " # TODO: Ugly hack to clear a string 
-    return cat(qmx, f"MM{path}={value};")
+        value=" " # TODO: Ugly hack to clear a string
+    return cat(q, f"MM{path}={value};")
 
-def menu_type(qmx, path):
-    item = menu_query(qmx, path)
-    type = DATA_TYPES[item["typeid"]]
-    if type == "Defined":
-        type = type + ": " + menu_list(qmx, item["listid"])
-    return type
+def menu_type(q, path):
+    item = menu_query(q, path)
+    typeid = DATA_TYPES[item["typeid"]]
+    if typeid == "Defined":
+        typeid = type + ": " + menu_list(q, item["listid"])
+    return typeid
 
-def menu_list(qmx, listRef):
-    return strip_menu_response(cat_with_response(qmx, f"ML{listRef};"))
+def menu_list(q, list_ref):
+    return strip_menu_response(cat_with_response(q, f"ML{list_ref};"))
 
-def menu_query(qmx, path):
-    response = cat_with_response(qmx, f"MM{path}?;")
+def menu_query(q, path):
+    response = cat_with_response(q, f"MM{path}?;")
     if response == "?;":
         return None
     response = strip_menu_response(response)
@@ -126,70 +128,69 @@ def menu_query(qmx, path):
     descriptor = response[2]
     value = None
     if typeid not in NON_VALUE_TYPES:
-        value = menu_get(qmx, path)
-    return {"path":path, 
-            "typeid":typeid, 
-            "listid":listid, 
-            "descriptor":descriptor, 
+        value = menu_get(q, path)
+    return {"path":path,
+            "typeid":typeid,
+            "listid":listid,
+            "descriptor":descriptor,
             "value":value}
 
-def menu_path_to_alpha(qmx, path):
+def menu_path_to_alpha(q, path):
     result = []
     path_steps = path.split("|")
     for i in range(len(path_steps)):
         this_path = "|".join(path_steps[0:i+1])
-        result.append(menu_query(qmx, this_path)["descriptor"])
+        result.append(menu_query(q, this_path)["descriptor"])
     return "|".join(result)
 
 def is_submenu(item):
     return item["typeid"]==f"{SUBDIRECTORY_TYPE}"
 
-def menu_report(qmx, path):
+def menu_report(q, path):
     if path == ROOT_PATH:
-        return f"{SHOW_DIVIDER}\n# ROOT MENU\n{SHOW_DIVIDER}";
-    item = menu_query(qmx, path)
-    alpha_path = menu_path_to_alpha(qmx, path)
+        return f"{SHOW_DIVIDER}\n# ROOT MENU\n{SHOW_DIVIDER}"
+    item = menu_query(q, path)
+    alpha_path = menu_path_to_alpha(q, path)
     if is_submenu(item):
-        return f"# {alpha_path} -- SUBDIRECTORY";
-    elif item["typeid"] in NON_VALUE_TYPES:
-        return f"# {alpha_path}";
-    else:
-        return f"{alpha_path}={item["value"]}"
+        return f"# {alpha_path} -- SUBDIRECTORY"
+    if item["typeid"] in NON_VALUE_TYPES:
+        return f"# {alpha_path}"
+    return f"{alpha_path}={item['value']}"
 
-def explore_submenu(qmx, path):
+def explore_submenu(q, path):
     result=[]
     if len(path) > 0 and path[-1] != "|":
         path = path + "|"
     for i in range(100):
-        response = menu_query(qmx, f"{path}{i}")
-        if response == None:
+        response = menu_query(q, f"{path}{i}")
+        if response is None:
             break
         result.append(response)
     return result
 
-def show(qmx, path, recursive):
+def show(q, path, recursive):
     # If what is passed initially is a submenu, traverse it
-    target = menu_query(qmx, path)
-    if target == None and len(path.strip()) > 0:
+    target = menu_query(q, path)
+    if target is None and len(path.strip()) > 0:
         return
     items = [ target ]
     if len(path.strip()) == 0:
-        print(menu_report(qmx, ROOT_PATH))
-        items = explore_submenu(qmx, "")
+        print(menu_report(q, ROOT_PATH))
+        items = explore_submenu(q, "")
     elif is_submenu(target):
-        items = explore_submenu(qmx, path)
+        items = explore_submenu(q, path)
 
     submenus = []
     for i in items:
-        print(menu_report(qmx, i["path"]))
+        print(menu_report(q, i["path"]))
         if is_submenu(i):
             submenus.append(i)
 
     if recursive:
         for s in submenus:
-            if menu_path_to_alpha(qmx, s["path"]) not in MENUS_TO_AVOID:
+            if menu_path_to_alpha(q, s["path"]) not in MENUS_TO_AVOID:
                 print(SHOW_DIVIDER)
-                show(qmx, s["path"], recursive)
+                show(q, s["path"], recursive)
 
 
 qmx = serial.Serial(args.port)  # open serial port
