@@ -7,7 +7,7 @@ import argparse
 
 # TODO: Note that setting a string to an empty string doesn't change it
 # TODO: Check input validity for set?
-# TODO: distinguish or combine dump/report
+# TODO: Add version number? License text?
 
 parser = argparse.ArgumentParser(
 formatter_class = argparse.RawDescriptionHelpFormatter,
