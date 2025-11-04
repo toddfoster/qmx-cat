@@ -67,9 +67,9 @@ qmx-cat load messages.txt
 
 With thanks to Stan Dye:
 
-```
-I just confirmed this works in Windows with python 3.11 installed.  Note the special notation required for com port numbers 10 and above.  Low com port numbers can be specified just as "COM6", etc.  And you must quote the menu paths so the "|" character isn't interpreted by the shell.
- 
+
+> I just confirmed this works in Windows with python 3.11 installed.  Note the special notation required for com port numbers 10 and above.  Low com port numbers can be specified just as "COM6", etc.  And you must quote the menu paths so the "|" character isn't interpreted by the shell.
+``` 
 D:\Stan\Downloads>py qmx-cat.py -p \\.\COM12 cat IF;
 IF00003887000     +00000000001100000 ;
  
