@@ -87,6 +87,8 @@ ROOT_PATH = "root - unique string"
 
 SHOW_DIVIDER = "#############"
 
+LOAD_PREFIX = "LOAD: "
+
 def cat(q, cmd):
     q.write(cmd.encode("utf-8"))
 
@@ -221,6 +223,7 @@ elif args.command == "load":
         for line in file:
             if line[0] == "#":
                 continue
+            print(LOAD_PREFIX + line.strip(), flush=True);
             pieces = line.strip().split("=", 1)
             menu_set(qmx, pieces[0], pieces[1])
 

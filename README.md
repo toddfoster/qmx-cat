@@ -100,3 +100,8 @@ Audio|Volume step=1dB
  
 D:\Stan\Downloads>py qmx-cat.py -p \\.\COM12 show -r SSB
 ```
+
+## Thanks
+
+Stan Dye contributed code that will hopefully make debugging "load" errors easier.
+
