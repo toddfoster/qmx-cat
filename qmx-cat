@@ -104,8 +104,21 @@ def menu_get(q, path):
     return strip_menu_response(cat_with_response(q, f"MM{path};"))
 
 def menu_set(q, path, value):
-    alpha_path = menu_path_to_alpha(q, path)
-    if (value=="" and alpha_path.startswith("Messages|Message")):
+    # Fix: previously this called menu_path_to_alpha(q, path) here, purely to
+    # check the Messages-clear special case below. That function walks the
+    # path one segment at a time and queries the radio for each segment via
+    # menu_query(), which returns None for some valid checklist-style
+    # submenus (e.g. CW|Choose filters|*, VFO|VFO tune rates|*,
+    # VFO|RIT tune rates|*) -- menu_path_to_alpha then does
+    # menu_query(...)["descriptor"] on that None and crashes with
+    # "TypeError: 'NoneType' object is not subscriptable", aborting the
+    # set/load entirely, even though the actual write below never used
+    # alpha_path for anything except this string check.
+    #
+    # `path` here is already the alpha-style path (that's the format
+    # `show`/`load` files use, and what callers pass to `set`), so we can
+    # just check it directly and skip the fragile extra round-trip.
+    if (value=="" and path.startswith("Messages|Message")):
         value=" " # TODO: Ugly hack to clear a string
     return cat(q, f"MM{path}={value};")
 
